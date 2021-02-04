@@ -1,0 +1,57 @@
+type User @model {
+    id: ID!
+    username: String!
+    name: String!
+    email: String!
+    image: String
+    tweets: [Tweet] @connection(keyName: "byUser", fields: ["id"])
+    comments: [Comment] @connection(keyName: "byUser", fields: ["id"])
+}
+
+type Tweet @model 
+  @key(name: "byUser", fields: ["userID"]) {
+    id: ID!
+    content: String!
+    image: String
+    userID: ID!
+    user: User @connection(fields: ["userID"])
+    likes: [Like] @connection(keyName: "byTweet", fields: ["id"])
+    comment: [Comment] @connection(keyName: "byTweet", fields: ["id"])
+}
+
+type Like @model(queries: null)
+  @key(name: "byUser", fields: ["userID", "tweetID"])
+  @key(name: "byTweet", fields: ["tweetID", "userID"]) {
+    id: ID!
+    userID: ID!
+    tweetID: ID!
+    user: User! @connection(fields: ["userID"])
+    tweet: Tweet! @connection(fields: ["tweetID"])
+  }
+
+type Comment @model 
+  @key(name: "byUser", fields: ["userID", "tweetID"])
+  @key(name: "byTweet", fields: ["tweetID", "userID"]) {
+    id: ID!
+    content: String!
+    image: String
+    userID: ID!
+    tweetID: ID!
+    user: User @connection(fields: ["userID"])
+    tweet: Tweet! @connection(fields: ["tweetID"])
+    likes: [CommentLike] @connection(keyName: "byComment", fields: ["id"])
+}
+
+type CommentLike @model(queries: null)
+  @key(name: "byUser", fields: ["userID", "commentID"])
+  @key(name: "byComment", fields: ["commentID", "userID"]) {
+    id: ID!
+    userID: ID!
+    tweetID: ID!
+    commentID: ID!
+    user: User! @connection(fields: ["userID"])
+    tweet: Tweet! @connection(fields: ["tweetID"])
+    comment: Comment! @connection(fields: ["commentID"])
+  }
+
+

@@ -1,13 +1,20 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import * as React from 'react';
+import {useEffect, useState} from 'react';
+import { API, Auth, graphqlOperation } from 'aws-amplify';
+
 
 import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
-import TabOneScreen from '../screens/TabOneScreen';
+import HomeScreen from '../screens/HomeScreen';
 import TabTwoScreen from '../screens/TabTwoScreen';
-import { BottomTabParamList, TabOneParamList, TabTwoParamList } from '../types';
+//import TabThreeScreen from '../screens/TabThreeScreen';
+//import TabFourScreen from '../screens/TabFourScreen';
+import { BottomTabParamList, HomeNavigatorParamList, SearchNavigatorParamList, NotificationsNavigatorParamList, MessagesNavigatorParamList } from '../types';
+import ProfilePicture from '../components/ProfilePicture';
+import { getUser } from '../src/graphql/queries';
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -16,22 +23,40 @@ export default function BottomTabNavigator() {
 
   return (
     <BottomTab.Navigator
-      initialRouteName="TabOne"
-      tabBarOptions={{ activeTintColor: Colors[colorScheme].tint }}>
+      initialRouteName="Home"
+      tabBarOptions={{ 
+        activeTintColor: Colors[colorScheme].tint,
+        showLabel: false,
+         }}>
       <BottomTab.Screen
-        name="TabOne"
-        component={TabOneNavigator}
+        name="Home"
+        component={HomeNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="md-home" color={Colors.light.tint} />,
         }}
       />
       <BottomTab.Screen
-        name="TabTwo"
-        component={TabTwoNavigator}
+        name="Search"
+        component={SearchNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
+          tabBarIcon: ({ color }) => <TabBarIcon name="ios-search" color={color} />,
         }}
       />
+        <BottomTab.Screen
+        name="Notifications"
+        component={NotificationsNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <TabBarIcon name="ios-notifications-outline" color={color} />,
+        }}
+      />
+        <BottomTab.Screen
+        name="Messages"
+        component={MessagesNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <TabBarIcon name="ios-mail" color={color} />,
+        }}
+      />
+
     </BottomTab.Navigator>
   );
 }
@@ -44,30 +69,99 @@ function TabBarIcon(props: { name: string; color: string }) {
 
 // Each tab has its own navigation stack, you can read more about this pattern here:
 // https://reactnavigation.org/docs/tab-based-navigation#a-stack-navigator-for-each-tab
-const TabOneStack = createStackNavigator<TabOneParamList>();
+const TabOneStack = createStackNavigator<HomeNavigatorParamList>();
 
-function TabOneNavigator() {
+function HomeNavigator() {
+
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    //get the current user
+    const fetchUser = async () => {
+      const userInfo = await Auth.currentAuthenticatedUser({ bypassCache: true });
+      if (!userInfo) {
+        return;
+      }
+      try {
+        const userData = await API.graphql(graphqlOperation(getUser, { id: userInfo.attributes.sub }))
+        if(userData) {
+          setUser(userData.data.getUser);
+        }
+      } catch (e) {
+        console.log(e);
+      }
+
+    }
+    fetchUser();
+  }, [])
+
   return (
     <TabOneStack.Navigator>
       <TabOneStack.Screen
-        name="TabOneScreen"
-        component={TabOneScreen}
-        options={{ headerTitle: 'Tab One Title' }}
+        name="HomeScreen"
+        component={HomeScreen}
+        options={{ 
+          headerTitleAlign: 'center',
+          headerStyle: {height: 80},
+          headerRightContainerStyle: {
+            marginRight: 15
+          },
+          headerLeftContainerStyle: {
+            marginLeft: 10
+          },
+          headerTitle: () => (
+            <Ionicons name={"logo-twitter"} size={30} color={Colors.light.tint}/>
+          ),
+          headerRight: () => (
+            <MaterialCommunityIcons name={"star-four-points-outline"} size={30} color={Colors.light.tint} />
+          ),
+          headerLeft: () => (
+            <ProfilePicture size={35} image={user?.image} />
+          )
+        }}
       />
     </TabOneStack.Navigator>
   );
 }
 
-const TabTwoStack = createStackNavigator<TabTwoParamList>();
+const TabTwoStack = createStackNavigator<SearchNavigatorParamList>();
 
-function TabTwoNavigator() {
+function SearchNavigator() {
   return (
     <TabTwoStack.Navigator>
       <TabTwoStack.Screen
-        name="TabTwoScreen"
+        name="SearchScreen"
         component={TabTwoScreen}
-        options={{ headerTitle: 'Tab Two Title' }}
+        options={{ headerTitle: 'Search' }}
       />
     </TabTwoStack.Navigator>
+  );
+}
+
+const TabThreeStack = createStackNavigator<NotificationsNavigatorParamList>();
+
+function NotificationsNavigator() {
+  return (
+    <TabThreeStack.Navigator>
+      <TabThreeStack.Screen
+        name="NotificationsScreen"
+        component={TabTwoScreen}
+        options={{ headerTitle: 'Notifications' }}
+      />
+    </TabThreeStack.Navigator>
+  );
+}
+
+const TabFourStack = createStackNavigator<MessagesNavigatorParamList>();
+
+function MessagesNavigator() {
+  return (
+    <TabFourStack.Navigator>
+      <TabFourStack.Screen
+        name="MessagesScreen"
+        component={TabTwoScreen}
+        options={{ headerTitle: 'Messages' }}
+      />
+    </TabFourStack.Navigator>
   );
 }
